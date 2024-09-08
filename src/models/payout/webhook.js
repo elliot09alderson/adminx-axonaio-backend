@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 const webhookSchema = new mongoose.Schema(
   {
     webhook_url: {
@@ -9,9 +8,16 @@ const webhookSchema = new mongoose.Schema(
       type: String,
       ref: "User",
     },
-    webhook_id : String,
+    webhook_id: String,
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("WebhookOut", webhookSchema);
+export const testPayoutWebhook = mongoose.model(
+  "TestPayoutWebhook",
+  webhookSchema
+);
+export const livePayoutWebhook = mongoose.model(
+  "LivePayoutWebhook",
+  webhookSchema
+);

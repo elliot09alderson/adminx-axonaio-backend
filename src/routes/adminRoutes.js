@@ -59,6 +59,36 @@ import {
   fetch_app,
   toggle_status,
 } from "../controllers/appController.js";
+
+import {
+  fetchUserDocDetails,
+  merchantDocUpload,
+  updateUserDetails,
+  updateUserReasonsAndNotify,
+} from "../controllers/riskAndComplianceController.js";
+import { fetchUserDetailsById } from "../controllers/riskAndComplianceController.js";
+import {
+  fetchFreshMerchant,
+  fetchReseller,
+  make_reseller,
+  manageMerchantInArray,
+  populateResellersMerchant,
+} from "../controllers/resellerController.js";
+import {
+  fetchAdminReseller,
+  fetchFreshReseller,
+  make_reseller_admin,
+  manageMerchantIn_RA_Array,
+  manageResellerInArray,
+  populateResellerAdmins_Reseller,
+  populateResellerAdminsMerchant,
+} from "../controllers/resellerAdminController.js";
+import {
+  getApiKey,
+  getWebhook,
+  updatePassword,
+} from "../controllers/settingsController.js";
+
 let uploadDoc = multer({ storage: pdfUpload("/uploads") });
 let uploadAvatar = multer({ storage: avatarUpload("/images") });
 
@@ -172,3 +202,73 @@ adminRouter.route("/create_app").post(verifyJWT, create_app);
 adminRouter.route("/fetch_app").get(verifyJWT, fetch_app);
 adminRouter.route("/fetch_active_app").get(verifyJWT, fetch_active_app);
 adminRouter.route("/toggle_status/:app_id").patch(verifyJWT, toggle_status);
+
+/* ---------------------- MANAGE RISK & COMPLIANCE APIs --------------------- */
+
+adminRouter.route("/merchant_doc_upload/:merchnatId").put(
+  verifyJWT,
+  uploadDoc.fields([
+    { name: "panAttachment", maxCount: 1 },
+    { name: "cancelledChequeAttachment", maxCount: 1 },
+    { name: "aadharVoterIdPassportAttachment", maxCount: 1 },
+  ]),
+  merchantDocUpload
+);
+
+adminRouter
+  .route("/fetch_merchant_doc_details/:merchantId")
+  .get(verifyJWT, fetchUserDocDetails);
+
+adminRouter
+  .route("/fetch_merchant_details/:merchantId")
+  .get(verifyJWT, fetchUserDetailsById);
+
+adminRouter
+  .route("/update_merchant_details/:merchantId")
+  .put(verifyJWT, updateUserDetails);
+adminRouter
+  .route("/update_reasons/:merchantId")
+  .put(verifyJWT, updateUserReasonsAndNotify);
+
+/* ----------------------------- MANAGE RESELLER ---------------------------- */
+
+adminRouter.route("/fetch_fresh_merchant").get(verifyJWT, fetchFreshMerchant);
+adminRouter
+  .route("/convert_reseller/:merchantId")
+  .put(verifyJWT, make_reseller);
+adminRouter.route("/fetch_reseller").get(verifyJWT, fetchReseller);
+
+adminRouter
+  .route("/fetch_reseller_merchant/:resellerId")
+  .get(verifyJWT, populateResellersMerchant);
+adminRouter.route("/resellers").put(verifyJWT, manageMerchantInArray);
+
+/* -------------------------- MANAGE RESELLER ADMIN ------------------------- */
+
+adminRouter.route("/fetch_fresh_reseller").get(verifyJWT, fetchFreshReseller);
+adminRouter
+  .route("/convert_reseller_admin/:resellerId")
+  .put(verifyJWT, make_reseller_admin);
+adminRouter.route("/fetch_reseller_admin").get(verifyJWT, fetchAdminReseller);
+
+adminRouter
+  .route("/fetch_reseller_admins_merchant/:resellerAdminId")
+  .get(verifyJWT, populateResellerAdminsMerchant);
+adminRouter
+  .route("/fetch_reseller_admins_reseller/:resellerAdminId")
+  .get(verifyJWT, populateResellerAdmins_Reseller);
+adminRouter
+  .route("/reseller_admin/:resellerAdminId/ra_merchants/:merchantId")
+  .put(verifyJWT, manageMerchantIn_RA_Array);
+
+adminRouter
+  .route("/reseller_admin/:resellerAdminId/ra_resellers/:resellerId")
+  .put(verifyJWT, manageResellerInArray);
+
+/* -------------------------------- SETTINGS -------------------------------- */
+
+adminRouter
+  .route("/change_merchant_password/:merchantId")
+  .put(verifyJWT, updatePassword);
+adminRouter.route("/fetch_apikeys/:merchantId").get(verifyJWT, getApiKey);
+adminRouter.route("/fetch_webhook/:merchantId").get(verifyJWT, getWebhook);

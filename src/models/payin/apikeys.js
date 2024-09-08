@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 const apiKeySchema = new mongoose.Schema(
   {
     salt_key: {
@@ -26,4 +25,5 @@ const apiKeySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("PayinApiKey", apiKeySchema);
+export const testPayinApiKey = mongoose.model("TestPayinApiKey", apiKeySchema);
+export const livePayinApiKey = mongoose.model("LivePayinApiKey", apiKeySchema);
