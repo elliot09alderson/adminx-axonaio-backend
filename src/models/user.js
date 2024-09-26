@@ -19,7 +19,7 @@ const UserSchema = new Schema(
     is_reseller_admin: {
       type: Boolean,
       default: false,
-    },
+    },  
     is_active: {
       type: Boolean,
       default: false,

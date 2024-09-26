@@ -16,16 +16,13 @@ const secret_key = "sasdamkjbfkakjkjakajkjabkabfkahbf";
 
 export const updatePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
     const merchantId = req.params.merchantId;
-
-    if (!currentPassword || !newPassword) {
+    console.log(req.body);
+    if (!newPassword) {
       return res
         .status(400)
-        .json({
-          status: false,
-          error: "Both current and new passwords are required.",
-        });
+        .json({ status: false, error: "New password is required." });
     }
 
     const user = await User.findOne({ m_id: merchantId });
@@ -33,12 +30,7 @@ export const updatePassword = async (req, res) => {
       return res.status(404).json({ status: false, error: "User not found." });
     }
 
-    // Decrypt stored passwords
-    const decryptedCurrentPassword = CryptoJS.AES.decrypt(
-      user.password,
-      secret_key
-    ).toString(CryptoJS.enc.Utf8);
-
+    // Decrypt stored previous passwords
     const decryptedPrevPassword = user.prevPassword
       ? CryptoJS.AES.decrypt(user.prevPassword, secret_key).toString(
           CryptoJS.enc.Utf8
@@ -51,24 +43,15 @@ export const updatePassword = async (req, res) => {
         )
       : null;
 
-    // Check if the provided current password matches the stored password
-    if (decryptedCurrentPassword !== currentPassword) {
-      return res.status(422).json({
-        status: false,
-        error: "Current password is incorrect.",
-      });
-    }
-
     // Ensure the new password is not the same as any of the previous passwords
     if (
-      decryptedCurrentPassword === newPassword ||
+      user.password === newPassword ||
       decryptedPrevPassword === newPassword ||
       decryptedPrevPrevPassword === newPassword
     ) {
       return res.status(422).json({
         status: false,
-        error:
-          "The new password cannot be the same as the current or previous passwords.",
+        error: "The new password cannot be the same as any previous passwords.",
       });
     }
 

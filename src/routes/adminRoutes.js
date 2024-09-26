@@ -6,6 +6,7 @@ import {
   registerUser,
   userLogin,
   verifyEmail,
+  whitelistMiddleware,
 } from "../controllers/adminController.js";
 import { isSuperAdmin, verifyJWT } from "../middlewares/authmidlleware.js";
 import {
@@ -88,6 +89,14 @@ import {
   getWebhook,
   updatePassword,
 } from "../controllers/settingsController.js";
+import {
+  createApiWhiteList,
+  createDomainWhitelist,
+  deleteApiWhiteListIp,
+  deleteWhiteListDomain,
+  getApiWhitelistIp,
+  getDomainWhitelist,
+} from "../controllers/adminSettingsController.js";
 
 let uploadDoc = multer({ storage: pdfUpload("/uploads") });
 let uploadAvatar = multer({ storage: avatarUpload("/images") });
@@ -269,6 +278,15 @@ adminRouter
 
 adminRouter
   .route("/change_merchant_password/:merchantId")
-  .put(verifyJWT, updatePassword);
+  .put(verifyJWT, whitelistMiddleware, updatePassword);
 adminRouter.route("/fetch_apikeys/:merchantId").get(verifyJWT, getApiKey);
 adminRouter.route("/fetch_webhook/:merchantId").get(verifyJWT, getWebhook);
+
+// ______________________________________API WHITELIST ________________
+adminRouter.route("/whitelist").post(verifyJWT, createApiWhiteList);
+adminRouter.route("/whitelist").get(verifyJWT, getApiWhitelistIp);
+adminRouter.route("/whitelist/delete").post(verifyJWT, deleteApiWhiteListIp);
+// ___________________________DOMAIN WHITELIST ________________
+adminRouter.route("/domain").post(verifyJWT, createDomainWhitelist);
+adminRouter.route("/domain").get(verifyJWT, getDomainWhitelist);
+adminRouter.route("/domain/delete").post(verifyJWT, deleteWhiteListDomain);

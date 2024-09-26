@@ -6,6 +6,8 @@ import jwt, { decode } from "jsonwebtoken";
 import randomstring from "randomstring";
 import sendEmailOtp from "../utils/sendEmailOtp.js";
 import validator from "validator";
+import User from "../models/user.js";
+import WhiteListApiModel from "../models/whiteListApiModel.js";
 // FUNCTION FOR GENERATE EmpID
 function generateEmpId() {
   const characters =
@@ -46,61 +48,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
 /* -------------------------------------------------------------------------- */
 /*                                REGISTER USER                               */
 /* -------------------------------------------------------------------------- */
-// const registerUser = asyncHandler(async (req, res) => {
-
-//   // console.log(req.body);
-//   try {
-
-//   const { first_name, email, password } = req.body;
-
-//   if (!first_name  || !email || !password) {
-//     return res.status(400).json({
-//       error: "please provide all the details",
-//     });
-//   }
-//   if (
-//     [first_name,  email, password].some((field) => field?.trim() === "")
-//   ) {
-//     return res.status(400).json ({status:false,error:"please fill all the fields"});
-//   }
-
-// const isAlreadyPresent = await Admin.findOne({ email });
-
-//   // console.log(isAlreadyPresent);
-
-//   if (isAlreadyPresent) {
-//     return res.status(409).json({status:false,error:"already present please login "});
-//   }
-//   // console.log(req.files);
-//   const avatarLocalPath = req.files?.avatar[0]?.path;
-
-//   const avatar = await uploadOnCloudinary(avatarLocalPath);
-//   console.log(avatar);
-//   if (!avatar) {
-//     return res.status(400).json({status:false,error:"Avatar is required"});
-//   }
-//   const user = await Admin.create({
-//     first_name,
-//     avatar: avatar.url || "",
-//     email,
-//     password,
-//   });
-
-//   const createdUser = await Admin.findById(user._id).select(
-//     "-password -refreshToken"
-//   );
-
-//   if (!createdUser)
-//     return res.status(400).json ({status:false,error:"something went wrong while registering the user"});
-
-//   return res
-//     .status(201)
-//     .json({status:true,massage:"created successfully"});
-//   } catch (error) {
-//     res.status(500).json({status:false, error:error.message})
-
-//   }
-// });
 
 const registerUser = asyncHandler(async (req, res) => {
   try {
@@ -153,12 +100,10 @@ const registerUser = asyncHandler(async (req, res) => {
     };
     for (const [key, value] of Object.entries(fields)) {
       if (typeof value !== "string" || value.trim() === "") {
-        return res
-          .status(400)
-          .json({
-            status: false,
-            error: `Please fill the ${key.replace("_", " ")} field`,
-          });
+        return res.status(400).json({
+          status: false,
+          error: `Please fill the ${key.replace("_", " ")} field`,
+        });
       }
     }
     console.log("hello 2");
@@ -279,12 +224,10 @@ const registerUser = asyncHandler(async (req, res) => {
       "-password -refreshToken"
     );
     if (!createdUser) {
-      return res
-        .status(400)
-        .json({
-          status: false,
-          error: "Something went wrong while registering the user",
-        });
+      return res.status(400).json({
+        status: false,
+        error: "Something went wrong while registering the user",
+      });
     }
 
     return res
@@ -298,59 +241,6 @@ const registerUser = asyncHandler(async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                                 LOGIN USER                                 */
 /* -------------------------------------------------------------------------- */
-
-// // Generate OTP
-// function generateOTP() {
-//   return randomstring.generate({
-//     length: 6,
-//     charset: "numeric",
-//   });
-// }
-// const userLogin = asyncHandler(async (req, res) => {
-// try {
-
-//   const {  email, password } = req.body;
-//   console.log("body passed")
-
-//   if (!email || !password) return res.status(400).json ({status:false, error:"username or email required"});
-//   //check if user already present
-//   const user = await Admin.findOne({official_email:email});
-//   // console.log("body passed 1")
-
-//   if (!user) {
-//     return res.status(404).json({status:false, error:"no records found"});
-//   }
-
-//   const is_valid = user.isPasswordCorrect(password);
-//   if (!is_valid) {
-//     return res.status(400).json({status:false,error:"Invalid user credentials"});
-//   }
-
-//   const otp = generateOTP(); // Generate a 6-digit OTP
-//   const newOTP = new Otps({ otp });
-//   await newOTP.save();
-
-//   // Send OTP via email
-//   await sendEmailOtp({
-//     to: email,
-//     subject: "Your One-Time Password (OTP)",
-//     message: `
-//       <p>Dear Admin,</p>
-//       <p>Your One-Time Password (OTP) is:  <strong>${otp}</strong> </p>
-//       <p>Please use this OTP to proceed with your authentication process.</p>
-//       <p>If you did not request this OTP, please disregard this email.</p>
-//       <br>
-//       <p>Best Regards,</p>
-//       <p>Axon-Tech</p>
-//   `,
-//   });
-
-//   return res.status(200).json({ status: true, message: "OTP sent successfully" });
-
-// } catch (error) {
-//   res.status(500).json({status:false, error:error.message})
-// }
-// });
 
 /* -------------------------------- NEW CODE -------------------------------- */
 
@@ -766,6 +656,51 @@ const getUserChannelProfile = asyncHandler(async (req, res, next) => {
     .json(new (200, channel[0], "Admin channel deails fetched")());
 });
 
+// ___________________WHITE LIST API CALLS _______________________________
+export async function whitelistMiddleware(req, res, next) {
+  const origin = req.headers.origin || req.headers.referer;
+  console.log("request comming from " + origin);
+  const allowedDomain = await WhiteListApiModel.findOne({ ip: origin });
+  // Check if the origin is in the allowed domains
+  if (origin && allowedDomain) {
+    // If the origin is valid, proceed to the next middleware or route handler
+    return next();
+  }
+
+  // If the origin is not valid, block the request
+
+  return res.status(403).json({
+    status: false,
+    message: "Access denied. This domain is not allowed to access the API.",
+  });
+}
+
+
+
+export async function createApiBlackList(req, res, next) {
+  const { ip } = req.body;
+  if (!ip) {
+    return res.status(200).json({
+      status: false,
+      message: "Please Provide Ip ",
+    });
+  }
+  const savedDomain = await WhiteListApiModel.create({
+    ip,
+    added_By: req.user._id,
+  });
+
+  if (savedDomain) {
+    return res.status(200).json({
+      status: true,
+      message: "Ip whitelisted successfully ",
+    });
+  }
+  return res.status(200).json({
+    status: false,
+    message: "some error occured while whilisting " + ip,
+  });
+}
 export {
   registerUser,
   userLogin,
